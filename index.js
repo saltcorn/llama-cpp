@@ -3,6 +3,8 @@ const Table = require("@saltcorn/data/models/table");
 const Form = require("@saltcorn/data/models/form");
 const Workflow = require("@saltcorn/data/models/workflow");
 const FieldRepeat = require("@saltcorn/data/models/fieldrepeat");
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 
 const configuration_workflow = (req) =>
   new Workflow({
@@ -43,29 +45,10 @@ const configuration_workflow = (req) =>
     ],
   });
 
-let llama;
 module.exports = {
   sc_plugin_api_version: 1,
   plugin_name: "llama-cpp",
-  onLoad: async () => {
-    const { LLM } = await import("llama-node");
-    const { LLamaCpp } = await import("llama-node/dist/llm/llama-cpp.js");
-    llama = new LLM(LLamaCpp);
-    const config = {
-      modelPath: "/Users/tomn/llama.cpp/models/llama-2-7b.ggmlv3.q4_0.bin",
-      enableLogging: true,
-      nCtx: 1024,
-      seed: 0,
-      f16Kv: false,
-      logitsAll: false,
-      vocabOnly: false,
-      useMlock: false,
-      embedding: false,
-      useMmap: true,
-      nGpuLayers: 0,
-    };
-    await llama.load(config);
-  },
+
   modeltemplates: {
     Llama: {
       prediction_outputs: ({ configuration }) => [
@@ -84,23 +67,11 @@ module.exports = {
       }) => {
         const results = [];
         for (const row of rows) {
-          const tokens = [];
-          await llama.createCompletion(
-            {
-              nThreads: 4,
-              nTokPredict: 16,
-              topK: 40,
-              topP: 0.1,
-              temp: 0.2,
-              repeatPenalty: 1,
-              prompt,
-            },
-            (response) => {
-              console.log(response);
-              tokens.push(response.token);
-            }
+          const { stdout } = await exec(
+            `./main -m ./models/llama-2-7b-chat.ggmlv3.q4_K_M.bin -p "${prompt}" -n 16 -t 4`,
+            { cwd: "/Users/tomn/llama.cpp" }
           );
-          results.push({ [outcome_field]: tokens.join("") });
+          results.push({ [outcome_field]: stdout });
         }
         return results;
       },
