@@ -29,15 +29,6 @@ const configuration_workflow = (req) =>
                 type: "String",
                 fieldview: "textarea",
               },
-              {
-                name: "response_field",
-                label: "Response field",
-                subfield: "The variable that is to be filled with response",
-                type: "String",
-                attributes: {
-                  options: field_options,
-                },
-              },
             ],
           });
         },
@@ -52,7 +43,7 @@ module.exports = {
   modeltemplates: {
     Llama: {
       prediction_outputs: ({ configuration }) => [
-        { name: configuration.outcome_field, type: "String" },
+        { name: "output", type: "String" },
       ],
       configuration_workflow,
       predict: async ({
@@ -67,11 +58,13 @@ module.exports = {
       }) => {
         const results = [];
         for (const row of rows) {
+          console.log("running llama with prompt: ", prompt);
           const { stdout } = await exec(
             `./main -m ./models/llama-2-7b-chat.ggmlv3.q4_K_M.bin -p "${prompt}" -n 16 -t 4`,
             { cwd: "/Users/tomn/llama.cpp" }
           );
-          results.push({ [outcome_field]: stdout });
+          console.log("llama result", stdout);
+          results.push({ output: stdout });
         }
         return results;
       },
