@@ -6,7 +6,7 @@
   "dependencies": {
     "@saltcorn/data": "^0.8.3",
     "@saltcorn/markup": "^0.8.3",
-    "llama-node": "0.1.6"
+    "handlebars": "4.7.7"
   },
   "author": "Tom Nielsen",
   "license": "MIT",

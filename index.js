@@ -2,7 +2,9 @@ const Field = require("@saltcorn/data/models/field");
 const Table = require("@saltcorn/data/models/table");
 const Form = require("@saltcorn/data/models/form");
 const Workflow = require("@saltcorn/data/models/workflow");
-const FieldRepeat = require("@saltcorn/data/models/fieldrepeat");
+const { div } = require("@saltcorn/markup/tags");
+const Handlebars = require("handlebars");
+
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
@@ -24,10 +26,14 @@ const configuration_workflow = (req) =>
           return new Form({
             fields: [
               {
-                label: "Prompt",
-                name: "prompt",
+                label: "Prompt template",
+                name: "prompt_template",
                 type: "String",
                 fieldview: "textarea",
+                sublabel: div(
+                  "Use handlebars to access fields. Example: <code>&lt;h1&gt;{{name}}&lt;/h1&gt;</code>. Variables in scope: " +
+                    table.fields.map((f) => `<code>${f.name}</code>`).join(", ")
+                ),
               },
             ],
           });
@@ -44,12 +50,13 @@ module.exports = {
     Llama: {
       prediction_outputs: ({ configuration }) => [
         { name: "output", type: "String" },
+        { name: "prompt", type: "String" },
       ],
       configuration_workflow,
       predict: async ({
         id, //instance id
         model: {
-          configuration: { prompt, outcome_field },
+          configuration: { prompt_template },
           table_id,
         },
         hyperparameters,
@@ -57,17 +64,27 @@ module.exports = {
         rows,
       }) => {
         const results = [];
+        const template = Handlebars.compile(prompt_template || "");
+
         for (const row of rows) {
+          const prompt = template(row);
           console.log("running llama with prompt: ", prompt);
           const { stdout } = await exec(
             `./main -m ./models/llama-2-7b-chat.ggmlv3.q4_K_M.bin -p "${prompt}" -n 16 -t 4`,
             { cwd: "/Users/tomn/llama.cpp" }
           );
           console.log("llama result", stdout);
-          results.push({ output: stdout });
+          results.push({ output: stdout, prompt });
         }
         return results;
       },
     },
   },
 };
+
+/* todo
+
+hyperparameters
+set ntokens
+
+*/
