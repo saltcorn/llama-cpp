@@ -79,7 +79,7 @@ module.exports = {
       hyperparameter_fields: ({ table, configuration }) => [
         {
           name: "ntokens",
-          label: "Num tokesn",
+          label: "Num tokens",
           type: "Integer",
           attributes: { min: 1 },
           required: true,
