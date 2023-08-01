@@ -70,7 +70,7 @@ module.exports = {
   sc_plugin_api_version: 1,
   plugin_name: "llama-cpp",
 
-  modeltemplates: {
+  modelpatterns: {
     Llama: {
       prediction_outputs: ({ configuration }) => [
         { name: "output", type: "String" },
